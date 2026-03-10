@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAuth } from "../context/AuthContext";
 
 interface LoginFormData {
   email: string;
@@ -11,6 +12,7 @@ interface LoginFormData {
 
 export default function LoginPage() {
   const router = useRouter();
+  const { setUser } = useAuth();
 
   const [formData, setFormData] = useState<LoginFormData>({
     email: "",
@@ -33,12 +35,12 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const res = await fetch("http://localhost:5000/api/auth/login", {
+      const res = await fetch("http://localhost:8000/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: "include", // Important for refresh token cookie
+        credentials: "include",
         body: JSON.stringify(formData),
       });
 
@@ -48,13 +50,20 @@ export default function LoginPage() {
         throw new Error(data.message || "Login failed");
       }
 
-      // Store access token (short-lived)
+      // store access token
       localStorage.setItem("accessToken", data.accessToken);
 
-      // Redirect to dashboard or home
+      // set user in context
+      setUser({
+        _id: data._id,
+        name: data.name,
+        email: data.email,
+        role: "user",
+      });
+
       router.push("/dashboard");
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Something went wrong");
     } finally {
       setLoading(false);
     }

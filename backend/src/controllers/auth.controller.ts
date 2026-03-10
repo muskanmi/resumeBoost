@@ -149,6 +149,7 @@ export const loginUser = async (req: Request, res: Response) => {
       _id: user._id,
       name: user.name,
       email: user.email,
+      role: user.role,
       accessToken,
       message: "Login successful",
     });
@@ -156,5 +157,25 @@ export const loginUser = async (req: Request, res: Response) => {
     return res.status(500).json({
       message: "Something went wrong",
     });
+  }
+};
+
+/**
+ * @route   POST /api/auth/me
+ */
+export const getCurrentUser = async (req: any, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    return res.status(200).json({
+      _id: req.user._id,
+      name: req.user.name,
+      email: req.user.email,
+      role: req.user.role,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "Something went wrong" });
   }
 };

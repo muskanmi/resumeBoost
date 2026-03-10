@@ -1,5 +1,9 @@
 import express from "express";
-import { registerUser, loginUser } from "../controllers/auth.controller";
+import {
+  registerUser,
+  loginUser,
+  getCurrentUser,
+} from "../controllers/auth.controller";
 import { protect } from "../middleware/auth.middleware";
 import { validate } from "../middleware/validate.middleware";
 import { registerSchema, loginSchema } from "../validations/auth.validation";
@@ -10,6 +14,7 @@ const router = express.Router();
 
 router.post("/register", validate(registerSchema), registerUser);
 router.post("/login", validate(loginSchema), loginUser);
+router.get("/me", protect, getCurrentUser);
 router.post("/refresh", refreshTokenHandler);
 router.get("/admin", protect, authorize("admin"), (req, res) => {
   res.json({ message: "Admin access granted" });
