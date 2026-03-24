@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import LogoIcon from "@/components/icons/LogoIcon";
+import { useRouter } from "next/navigation";
+import { useAuth } from "../context/AuthContext";
 
 interface RegisterFormData {
   name: string;
@@ -11,6 +13,8 @@ interface RegisterFormData {
 }
 
 export default function RegisterPage() {
+  const router = useRouter();
+  const { setUser } = useAuth();
   const [formData, setFormData] = useState<RegisterFormData>({
     name: "",
     email: "",
@@ -48,10 +52,16 @@ export default function RegisterPage() {
         throw new Error(data.message || "Registration failed");
       }
 
-      console.log("Registered:", data);
-
-      // Optional: redirect or store access token
       localStorage.setItem("accessToken", data.accessToken);
+      
+      setUser({
+        _id: data._id,
+        name: data.name,
+        email: data.email,
+        role: "user",
+      });
+
+      router.push("/dashboard");
     } catch (err: any) {
       setError(err.message);
     } finally {

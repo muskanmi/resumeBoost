@@ -23,23 +23,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const fetchUser = async () => {
-      const token = localStorage.getItem("accessToken");
-
-      console.log(token, "ttttt");
-
-      if (!token) {
-        setLoading(false);
-        return;
-      }
+      const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
 
       try {
         const res = await fetch("http://localhost:8000/api/auth/me", {
           headers: {
-            Authorization: `Bearer ${token}`,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
           credentials: "include",
         });
-        console.log(await res.json(), "res");
 
         if (res.ok) {
           const data = await res.json();
@@ -48,6 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(null);
         }
       } catch (error) {
+        console.error("Auth check failed:", error);
         setUser(null);
       } finally {
         setLoading(false);
