@@ -10,7 +10,7 @@ import JobMatcherCard from "./components/JobMatcherCard";
 export default function JobMatcherPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
-  // ✅ Portal state
+  const [boostSavedJobs, setBoostSavedJobs] = useState<any[]>([]);
   const [selectedPortals, setSelectedPortals] = useState<string[]>([
     "LinkedIn",
     "Naukri",
@@ -19,16 +19,56 @@ export default function JobMatcherPage() {
   ]);
 
   useEffect(() => {
+    if (!loading && user) {
+      const stored = localStorage.getItem("BOOST_SAVED_JOBS");
+      if (stored) setBoostSavedJobs(JSON.parse(stored));
+    }
+  }, [user, loading]);
+
+  useEffect(() => {
     if (!loading && !user) {
       router.push("/login");
     }
   }, [user, loading, router]);
 
+  const handleApplySuccess = (job: any) => {
+    setBoostSavedJobs((prev) => {
+      const exists = prev.find((j) => j.id.toString() === job.id.toString());
+      let newState;
+      if (exists) {
+        newState = prev.map((j) =>
+          j.id.toString() === job.id.toString() ? { ...j, status: "applied" } : j
+        );
+      } else {
+        newState = [
+          ...prev,
+          { ...job, status: "applied", savedOn: new Date().toLocaleDateString("en-GB") },
+        ];
+      }
+      localStorage.setItem("BOOST_SAVED_JOBS", JSON.stringify(newState));
+      return newState;
+    });
+  };
+
+  const handleSaveSuccess = (job: any) => {
+    setBoostSavedJobs((prev) => {
+      const exists = prev.find((j) => j.id.toString() === job.id.toString());
+      if (exists) return prev;
+
+      const newState = [
+        ...prev,
+        { ...job, status: "saved", savedOn: new Date().toLocaleDateString("en-GB") },
+      ];
+      localStorage.setItem("BOOST_SAVED_JOBS", JSON.stringify(newState));
+      return newState;
+    });
+  };
+
   if (loading || !user) return null;
 
-  // ✅ Jobs data (convert your static cards into array)
   const jobs = [
     {
+      id: "matcher-1",
       title: "Senior React Developer",
       company: "Tech Innovations Inc",
       location: "Remote",
@@ -41,6 +81,7 @@ export default function JobMatcherPage() {
       skills: ["React", "TypeScript", "Node.js", "AWS"],
     },
     {
+      id: "matcher-2",
       title: "Full Stack Engineer",
       company: "StartupHub",
       location: "San Francisco, CA",
@@ -54,10 +95,12 @@ export default function JobMatcherPage() {
     },
   ];
 
-  // ✅ FILTER LOGIC
   const filteredJobs = jobs.filter((job) =>
     selectedPortals.includes(job.platform),
   );
+
+  const appliedIds = boostSavedJobs.filter(j => j.status === 'applied').map(j => j.id.toString());
+  const savedIds = boostSavedJobs.map(j => j.id.toString());
 
   return (
     <>
@@ -65,31 +108,32 @@ export default function JobMatcherPage() {
 
       <div className="min-h-screen bg-white py-10">
         <div className="max-w-6xl mx-auto px-6">
-          {/* Title */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">AI Job Matcher</h1>
-
             <p className="text-gray-600 mt-1">
-              Find jobs matching your resume across LinkedIn, Naukri, Instahyre,
-              and Wellfound
+              Find jobs matching your resume across LinkedIn, Naukri, Instahyre, and Wellfound
             </p>
           </div>
 
-          {/* ✅ Pass state to SearchBar */}
           <SearchBar
             selectedPortals={selectedPortals}
             setSelectedPortals={setSelectedPortals}
           />
 
-          {/* Results text */}
           <p className="text-gray-600 mt-6 mb-4">
             Found {filteredJobs.length} jobs matching your profile
           </p>
 
-          {/* Jobs */}
           <div className="space-y-6">
-            {filteredJobs.map((job, index) => (
-              <JobMatcherCard key={index} {...job} />
+            {filteredJobs.map((job) => (
+              <JobMatcherCard 
+                key={job.id} 
+                {...job} 
+                initialApplied={appliedIds.includes(job.id)}
+                initialSaved={savedIds.includes(job.id)}
+                onApplySuccess={() => handleApplySuccess(job)}
+                onSaveSuccess={() => handleSaveSuccess(job)}
+              />
             ))}
           </div>
         </div>

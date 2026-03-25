@@ -143,25 +143,27 @@ function JobCard({
           <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 mb-3">
             <span className="flex items-center gap-1">
               <FiMapPin size={12} />
-              {job.location}
+              {job.location || "Remote"}
             </span>
             <span className="flex items-center gap-1">
               <FiDollarSign size={12} />
-              {job.salary}
+              {job.salary || "Competitive"}
             </span>
-            <span className="flex items-center gap-1">
-              <FiBriefcase size={12} />
-              {job.type}
-            </span>
+            {job.type && (
+              <span className="flex items-center gap-1">
+                <FiBriefcase size={12} />
+                {job.type}
+              </span>
+            )}
             <span className="flex items-center gap-1">
               <FiCalendar size={12} />
-              Saved on {job.savedOn}
+              Saved on {job.savedOn || "Recent"}
             </span>
           </div>
 
           {/* Tags */}
           <div className="flex flex-wrap gap-2">
-            {job.tags.map((tag) => (
+            {(job.tags || []).map((tag) => (
               <span
                 key={tag}
                 className="text-xs bg-gray-100 text-gray-700 px-2.5 py-0.5 rounded-md"
@@ -217,10 +219,28 @@ export default function SavedJobsPage() {
   const [activeTab, setActiveTab] = useState<"saved" | "applied">("saved");
 
   useEffect(() => {
+    // 1. Initial Auth Check
     if (!loading && !user) {
       router.push("/login");
     }
+
+    // 2. Load from LocalStorage
+    const stored = localStorage.getItem("BOOST_SAVED_JOBS");
+    if (stored) {
+      try {
+        setJobs(JSON.parse(stored));
+      } catch (e) {
+        console.error("Failed to parse saved jobs", e);
+      }
+    }
   }, [user, loading, router]);
+
+  // 3. Persist changes
+  useEffect(() => {
+    if (jobs !== INITIAL_JOBS) {
+      localStorage.setItem("BOOST_SAVED_JOBS", JSON.stringify(jobs));
+    }
+  }, [jobs]);
 
   const savedCount = jobs.filter((j) => j.status === "saved").length;
   const appliedCount = jobs.filter((j) => j.status === "applied").length;
